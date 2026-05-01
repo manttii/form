@@ -221,39 +221,6 @@ export default function Home() {
   };
 
   if (jobId && progress) {
-    // Progress View
-    const percentage = Math.round((progress.progress / progress.total) * 100);
-    return (
-      <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 font-sans">
-        <div className="max-w-xl w-full bg-neutral-900 border border-neutral-800 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500" style={{ width: `${percentage}%`, transition: 'width 0.5s' }} />
-          
-          <h2 className="text-3xl font-bold mb-2 tracking-tight text-white flex items-center gap-3">
-            {progress.status === 'completed' ? <CheckCircle2 className="text-green-500" /> : <Loader2 className="animate-spin text-blue-500" />}
-            {progress.status === 'completed' ? 'Automation Complete' : 'Running Automation'}
-          </h2>
-          <p className="text-neutral-400 mb-8">Generated {progress.progress} of {progress.total} responses</p>
-          
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-800/80 flex flex-col">
-              <span className="text-sm text-neutral-400 mb-1">Successful</span>
-              <span className="text-3xl font-semibold text-green-400">{progress.success}</span>
-            </div>
-            <div className="bg-neutral-800/50 p-4 rounded-xl border border-neutral-800/80 flex flex-col">
-              <span className="text-sm text-neutral-400 mb-1">Failed</span>
-              <span className="text-3xl font-semibold text-red-400">{progress.error}</span>
-            </div>
-          </div>
-          
-          {progress.errors && progress.errors.length > 0 && (
-            <div className="mb-6 p-4 bg-red-950/30 border border-red-900/50 rounded-xl">
-              <h4 className="text-red-400 font-medium mb-2 text-sm flex items-center gap-2"><Server size={14}/> Recent Errors</h4>
-              <ul className="text-xs text-red-300 space-y-1 overflow-y-auto max-h-32">
-                {progress.errors.map((e, i) => <li key={i}>{e}</li>)}
-              </ul>
-            </div>
-          )}
-          
           {progress.status === 'completed' && (
             <button 
               onClick={() => { setJobId(null); setProgress(null); }}
