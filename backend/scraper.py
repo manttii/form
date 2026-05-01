@@ -139,4 +139,16 @@ def scrape_form(url: str):
                     fields_map[name]["options"].append(val)
                             
     form_data["fields"] = list(fields_map.values())
+    
+    # Try to detect current response count if public
+    try:
+        text = soup.get_text()
+        count_match = re.search(r'(\d+)\s+responses', text, re.IGNORECASE)
+        if count_match:
+            form_data["current_responses"] = int(count_match.group(1))
+        else:
+            form_data["current_responses"] = None
+    except Exception:
+        form_data["current_responses"] = None
+        
     return form_data

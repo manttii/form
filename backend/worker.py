@@ -114,22 +114,40 @@ def start_job(job_id: str, config: dict):
             # 1. Check for standard "recorded" text
             # 2. Check for "formResponse" in final URL (often redirects to a success page)
             # 3. If it's a 200 and doesn't contain common error indicators like "required field" or "invalid"
-            success_indicators = ["recorded", "Thank you", "thanks", "submitted", "another response"]
+            success_indicators = ["recorded", "Thank you", "thanks", "submitted", "another response", "votre réponse a été enregistrée"]
             is_success = any(ind.lower() in res.text.lower() for ind in success_indicators)
             
-            # If the status is 200 and we didn't find specific error text, it's likely a success
-            # especially if the user says they see responses appearing.
-            error_indicators = ["This is a required question", "must be a valid", "invalid email"]
+            # Catch silent drops / rate limiting / validation errors
+            error_indicators = [
+                "This is a required question", 
+                "must be a valid", 
+                "invalid email", 
+                "too many requests", 
+                "please wait", 
+                "try again later",
+                "Something went wrong",
+                "robot",
+                "captcha"
+            ]
             has_errors = any(err.lower() in res.text.lower() for err in error_indicators)
 
-            if res.status_code == 200 and (is_success or not has_errors):
+            # Check if we stayed on the same page (usually indicates a validation error)
+            # A success usually redirects or shows a very different small page
+            is_same_page = len(res.text) > 10000 and "formResponse" not in res.url # Crude check
+
+            if res.status_code == 200 and is_success and not has_errors:
                 jobs[job_id]["success"] += 1
             elif res.status_code in [201, 302]:
                 jobs[job_id]["success"] += 1
             else:
                 jobs[job_id]["error"] += 1
                 if len(jobs[job_id]["errors"]) < 10:
-                    msg = "Validation error" if has_errors else f"HTTP {res.status_code}"
+                    if has_errors:
+                        msg = "Validation/Rate-limit error"
+                    elif is_same_page:
+                        msg = "Form not submitted (stuck on page)"
+                    else:
+                        msg = f"Incomplete submission (HTTP {res.status_code})"
                     jobs[job_id]["errors"].append(msg)
         except Exception as e:
             jobs[job_id]["error"] += 1

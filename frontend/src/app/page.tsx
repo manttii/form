@@ -18,6 +18,7 @@ type FormStructure = {
   action: string;
   hidden_fields: Record<string, string>;
   fields: Field[];
+  current_responses?: number | null;
 };
 
 export default function Home() {
@@ -232,7 +233,14 @@ export default function Home() {
               <h1 className="text-3xl font-bold tracking-tight mb-1 text-white flex items-center gap-3">
                 <Settings className="text-blue-500" /> Form Configuration
               </h1>
-              <p className="text-neutral-400 truncate max-w-lg text-sm">{structure.url}</p>
+              <div className="flex items-center gap-3">
+                <p className="text-neutral-400 truncate max-w-lg text-sm">{structure.url}</p>
+                {structure.current_responses !== null && structure.current_responses !== undefined && (
+                  <span className="bg-neutral-800 text-neutral-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-neutral-700">
+                    {structure.current_responses} EXISTING RESPONSES
+                  </span>
+                )}
+              </div>
             </div>
             <button 
               onClick={() => setStructure(null)} 
