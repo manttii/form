@@ -156,6 +156,11 @@ export default function Home() {
           <option>Random Words</option>
           <option>Random Address</option>
           <option>Random Company</option>
+          <option>Random City</option>
+          <option>Random Country</option>
+          <option>Random Job</option>
+          <option>Random Username</option>
+          <option>Random Number</option>
         </select>
       );
     }

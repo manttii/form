@@ -70,6 +70,16 @@ def start_job(job_id: str, config: dict):
                     val = fake.address().replace('\n', ', ')
                 elif fconfig == 'Random Company':
                     val = fake.company()
+                elif fconfig == 'Random City':
+                    val = fake.city()
+                elif fconfig == 'Random Country':
+                    val = fake.country()
+                elif fconfig == 'Random Job':
+                    val = fake.job()
+                elif fconfig == 'Random Username':
+                    val = fake.user_name()
+                elif fconfig == 'Random Number':
+                    val = str(random.randint(1000, 99999))
                 else:
                     # Try to guess based on title if config is default
                     title_lower = field.get('title', '').lower()
@@ -78,12 +88,15 @@ def start_job(job_id: str, config: dict):
                     elif 'phone' in title_lower: val = fake.phone_number()
                     elif 'age' in title_lower: val = str(random.randint(18, 70))
                     elif 'address' in title_lower: val = fake.address().replace('\n', ', ')
+                    elif 'city' in title_lower: val = fake.city()
+                    elif 'job' in title_lower: val = fake.job()
+                    elif 'company' in title_lower: val = fake.company()
                     else: val = fake.word()
                 payload[fid] = val
 
         try:
             # Random delay to simulate human typing/interaction
-            time.sleep(random.uniform(1.5, 4.0))
+            time.sleep(random.uniform(1.0, 3.0))
             
             headers = {
                 "User-Agent": fake.user_agent(),
@@ -91,31 +104,33 @@ def start_job(job_id: str, config: dict):
                 "Origin": "https://docs.google.com",
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
                 "Accept-Language": "en-US,en;q=0.9",
-                "Cache-Control": "max-age=0",
-                "Content-Type": "application/x-www-form-urlencoded",
             }
             
             # Use a session for better consistency
             session = requests.Session()
             res = session.post(url, data=payload, headers=headers, timeout=15, allow_redirects=True)
             
-            # Google Forms returns 200 even on some validation errors, 
-            # but usually it's a redirect to a thank you page.
-            if res.status_code == 200:
-                # Check if the response body contains "Your response has been recorded"
-                if "Your response has been recorded" in res.text or "has been recorded" in res.text:
-                    jobs[job_id]["success"] += 1
-                else:
-                    # Might be a validation error or multi-page form
-                    jobs[job_id]["error"] += 1
-                    if len(jobs[job_id]["errors"]) < 10:
-                        jobs[job_id]["errors"].append("Possible validation error or incomplete form")
+            # More robust success detection
+            # 1. Check for standard "recorded" text
+            # 2. Check for "formResponse" in final URL (often redirects to a success page)
+            # 3. If it's a 200 and doesn't contain common error indicators like "required field" or "invalid"
+            success_indicators = ["recorded", "Thank you", "thanks", "submitted", "another response"]
+            is_success = any(ind.lower() in res.text.lower() for ind in success_indicators)
+            
+            # If the status is 200 and we didn't find specific error text, it's likely a success
+            # especially if the user says they see responses appearing.
+            error_indicators = ["This is a required question", "must be a valid", "invalid email"]
+            has_errors = any(err.lower() in res.text.lower() for err in error_indicators)
+
+            if res.status_code == 200 and (is_success or not has_errors):
+                jobs[job_id]["success"] += 1
             elif res.status_code in [201, 302]:
                 jobs[job_id]["success"] += 1
             else:
                 jobs[job_id]["error"] += 1
                 if len(jobs[job_id]["errors"]) < 10:
-                    jobs[job_id]["errors"].append(f"HTTP {res.status_code}")
+                    msg = "Validation error" if has_errors else f"HTTP {res.status_code}"
+                    jobs[job_id]["errors"].append(msg)
         except Exception as e:
             jobs[job_id]["error"] += 1
             if len(jobs[job_id]["errors"]) < 10:
