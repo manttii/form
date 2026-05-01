@@ -1,15 +1,23 @@
 import os
 import json
 from upstash_redis import Redis
+from dotenv import load_dotenv
 
-# Configuration for Vercel KV
-KV_URL = os.environ.get("KV_REST_API_URL")
-KV_TOKEN = os.environ.get("KV_REST_API_TOKEN")
+# Load local .env if present
+load_dotenv()
+
+# Configuration for Vercel KV or Upstash
+KV_URL = os.environ.get("KV_REST_API_URL") or os.environ.get("UPSTASH_REDIS_REST_URL")
+KV_TOKEN = os.environ.get("KV_REST_API_TOKEN") or os.environ.get("UPSTASH_REDIS_REST_TOKEN")
 
 redis_client = None
 if KV_URL and KV_TOKEN:
     try:
-        redis_client = Redis(url=KV_URL, token=KV_TOKEN)
+        # upstash-redis expects the URL to start with https://
+        url = KV_URL
+        if not url.startswith("http"):
+            url = f"https://{url}"
+        redis_client = Redis(url=url, token=KV_TOKEN)
     except:
         redis_client = None
 

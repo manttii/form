@@ -5,3 +5,4 @@ requests
 faker
 pydantic
 upstash-redis
+python-dotenv
