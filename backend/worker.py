@@ -3,6 +3,8 @@ import random
 import requests
 from faker import Faker
 import data_pool
+
+fake = Faker()
 jobs = {}
 
 def get_job_state(job_id: str):
