@@ -13,6 +13,7 @@ type Field = {
   required?: boolean;
   custom_values?: string;
   only_custom?: boolean;
+  favored_option?: string;
 };
 
 type FormStructure = {
