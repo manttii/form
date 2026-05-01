@@ -143,6 +143,7 @@ export default function Home() {
 
   const renderFieldConfig = (field: Field, idx: number) => {
     const isTextLike = field.type === 'text' || field.type === 'paragraph';
+    const isChoiceType = ['single_choice', 'dropdown', 'linear_scale'].includes(field.type);
     
     if (isTextLike) {
       return (
@@ -185,6 +186,25 @@ export default function Home() {
               Only use custom entries
             </label>
           </div>
+        </div>
+      );
+    }
+    
+    if (isChoiceType && field.options.length > 0) {
+      return (
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
+          <label className="text-[10px] text-neutral-500 uppercase font-bold">Favored Option (Bias)</label>
+          <select 
+            className="bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500 transition-colors"
+            value={field.favored_option || ""}
+            onChange={(e) => updateFieldConfig(idx, 'favored_option', e.target.value)}
+          >
+            <option value="">Auto (Balanced)</option>
+            {field.options.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+          <p className="text-[9px] text-neutral-500">Selected option will appear ~75% of the time</p>
         </div>
       );
     }

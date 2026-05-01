@@ -60,7 +60,11 @@ def start_job(job_id: str, config: dict):
 
                 # Smart choice based on type
                 if ftype in ['single_choice', 'dropdown', 'linear_scale'] and options:
-                    payload[fid] = random.choice(options)
+                    favored = field.get('favored_option')
+                    if favored and favored in options and random.random() < 0.75:
+                        payload[fid] = favored
+                    else:
+                        payload[fid] = random.choice(options)
                 elif ftype == 'multiple_choice' and options:
                     num_picks = random.randint(1, len(options))
                     picks = random.sample(options, num_picks)
