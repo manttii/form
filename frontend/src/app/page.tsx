@@ -29,10 +29,10 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [structure, setStructure] = useState<FormStructure | null>(null);
-  
+
   const [count, setCount] = useState(10);
   const [jobId, setJobId] = useState<string | null>(null);
-  const [progress, setProgress] = useState<{status: string, progress: number, total: number, success: number, error: number, errors: string[]} | null>(null);
+  const [progress, setProgress] = useState<{ status: string, progress: number, total: number, success: number, error: number, errors: string[] } | null>(null);
 
   const getApiUrl = (endpoint: string) => {
     // Detect if running on Vercel or production vs local development
@@ -58,7 +58,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to parse");
-      
+
       // Initialize config based on type
       const initializedFields = data.fields.map((f: any) => {
         let defaultConfig = "Random Words";
@@ -71,13 +71,13 @@ export default function Home() {
           else if (title.includes("address")) defaultConfig = "Random Address";
           else if (f.type === "paragraph") defaultConfig = "Random Sentences";
         }
-        
+
         return {
           ...f,
           config: defaultConfig
         };
       });
-      
+
       setStructure({ ...data, fields: initializedFields });
     } catch (err: any) {
       setError(err.message);
@@ -97,7 +97,7 @@ export default function Home() {
         fields: structure.fields,
         count: count
       };
-      
+
       const res = await fetch(getApiUrl("/api/start"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -105,7 +105,7 @@ export default function Home() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to start");
-      
+
       setJobId(data.job_id);
     } catch (err: any) {
       setError(err.message);
@@ -116,7 +116,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!jobId) return;
-    
+
     const interval = setInterval(async () => {
       try {
         const res = await fetch(getApiUrl(`/api/progress/${jobId}`));
@@ -131,7 +131,7 @@ export default function Home() {
         console.error(err);
       }
     }, 1000);
-    
+
     return () => clearInterval(interval);
   }, [jobId]);
 
@@ -145,11 +145,11 @@ export default function Home() {
   const renderFieldConfig = (field: Field, idx: number) => {
     const isTextLike = field.type === 'text' || field.type === 'paragraph';
     const isChoiceType = ['single_choice', 'dropdown', 'linear_scale'].includes(field.type);
-    
+
     if (isTextLike) {
       return (
         <div className="flex flex-col gap-3 w-full sm:w-auto">
-          <select 
+          <select
             className="bg-neutral-800 border border-neutral-700 text-sm rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500 transition-colors"
             value={field.config}
             onChange={(e) => updateFieldConfig(idx, 'config', e.target.value)}
@@ -169,7 +169,7 @@ export default function Home() {
             <option>Random Number</option>
             <option>Custom Only</option>
           </select>
-          
+
           <div className="space-y-2">
             <textarea
               placeholder="Custom entries (comma separated)..."
@@ -178,8 +178,8 @@ export default function Home() {
               onChange={(e) => updateFieldConfig(idx, 'custom_values', e.target.value)}
             />
             <label className="flex items-center gap-2 text-[10px] text-neutral-400 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={field.only_custom || false}
                 onChange={(e) => updateFieldConfig(idx, 'only_custom', e.target.checked)}
                 className="rounded border-neutral-700 bg-neutral-800"
@@ -190,12 +190,12 @@ export default function Home() {
         </div>
       );
     }
-    
+
     if (isChoiceType && field.options.length > 0) {
       return (
         <div className="flex flex-col gap-2 w-full sm:w-auto">
           <label className="text-[10px] text-neutral-500 uppercase font-bold">Favored Option (Bias)</label>
-          <select 
+          <select
             className="bg-neutral-800 border border-neutral-700 text-xs rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500 transition-colors"
             value={field.favored_option || ""}
             onChange={(e) => updateFieldConfig(idx, 'favored_option', e.target.value)}
@@ -209,10 +209,10 @@ export default function Home() {
         </div>
       );
     }
-    
+
     if (field.type === 'date') return <div className="text-xs text-blue-400 font-medium bg-blue-900/20 px-2 py-1 rounded">Auto Date Generator</div>;
     if (field.type === 'time') return <div className="text-xs text-purple-400 font-medium bg-purple-900/20 px-2 py-1 rounded">Auto Time Generator</div>;
-    
+
     return (
       <div className="text-xs text-neutral-400 max-w-[200px] truncate bg-neutral-800 px-2 py-1 rounded">
         {field.options.length} options detected
@@ -225,7 +225,7 @@ export default function Home() {
       <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 font-sans">
         <div className="max-w-2xl w-full bg-neutral-900/50 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-neutral-800">
-            <div 
+            <div
               className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out"
               style={{ width: `${(progress.progress / progress.total) * 100}%` }}
             />
@@ -245,9 +245,9 @@ export default function Home() {
               </p>
             </div>
             {progress.status === 'running' && (
-              <button 
+              <button
                 onClick={async () => {
-                  await fetch(`${BACKEND_URL}/cancel/${jobId}`, { method: 'POST' });
+                  await fetch(getApiUrl(`/cancel/${jobId}`), { method: 'POST' });
                 }}
                 className="text-xs text-red-400 hover:text-red-300 font-bold px-3 py-1 bg-red-900/20 rounded-full transition-colors"
               >
@@ -283,7 +283,7 @@ export default function Home() {
           )}
 
           {progress.status === 'completed' && (
-            <button 
+            <button
               onClick={() => { setJobId(null); setProgress(null); }}
               className="w-full mt-8 py-4 bg-neutral-100 text-neutral-900 font-bold rounded-xl hover:bg-white transition-all active:scale-95"
             >
@@ -314,18 +314,18 @@ export default function Home() {
                 )}
               </div>
             </div>
-            <button 
-              onClick={() => setStructure(null)} 
+            <button
+              onClick={() => setStructure(null)}
               className="text-sm text-neutral-400 hover:text-white transition-colors px-4 py-2 bg-neutral-900 rounded-lg border border-neutral-800"
             >
               Back
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="md:col-span-2 space-y-4">
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-xl">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><FileText size={18} className="text-neutral-400"/> Map Fields</h2>
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><FileText size={18} className="text-neutral-400" /> Map Fields</h2>
                 <div className="space-y-4">
                   {structure.fields.map((field, idx) => (
                     <div key={field.id} className="p-4 bg-neutral-950/50 border border-neutral-800 rounded-xl flex flex-col sm:flex-row gap-4 justify-between sm:items-center">
@@ -336,7 +336,7 @@ export default function Home() {
                         </div>
                         <p className="text-xs text-neutral-500 mt-1 uppercase tracking-wider font-semibold">{field.type.replace('_', ' ')}</p>
                       </div>
-                      
+
                       {renderFieldConfig(field, idx)}
                     </div>
                   ))}
@@ -346,16 +346,16 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            
+
             <div className="space-y-4">
               <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-6 shadow-xl sticky top-6">
-                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><BarChart size={18} className="text-neutral-400"/> Execution Settings</h2>
-                
+                <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><BarChart size={18} className="text-neutral-400" /> Execution Settings</h2>
+
                 <div className="space-y-4 mb-6">
                   <div>
                     <label className="block text-sm text-neutral-400 mb-2">Number of Responses</label>
-                    <input 
-                      type="number" 
+                    <input
+                      type="number"
                       min="1" max="10000"
                       value={count}
                       onChange={(e) => setCount(Number(e.target.value))}
@@ -363,8 +363,8 @@ export default function Home() {
                     />
                   </div>
                 </div>
-                
-                <button 
+
+                <button
                   onClick={startAutomation}
                   disabled={loading}
                   className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-900/20 disabled:opacity-50"
@@ -386,11 +386,11 @@ export default function Home() {
       {/* Decorative background elements */}
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-900/20 blur-[120px] rounded-full pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full pointer-events-none" />
-      
+
       <div className="max-w-2xl w-full z-10 text-center space-y-8">
         <div className="space-y-4">
           <h1 className="text-5xl md:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-white via-neutral-200 to-neutral-500">
-            Automate Forms.<br/>At Scale.
+            Automate Forms.<br />At Scale.
           </h1>
           <p className="text-lg text-neutral-400 max-w-lg mx-auto leading-relaxed">
             Instantly generate thousands of realistic responses for your Google Forms. Perfect for load testing and data population.
@@ -413,7 +413,7 @@ export default function Home() {
             {loading ? <Loader2 className="animate-spin" size={18} /> : <>Fetch Structure <ArrowRight size={18} /></>}
           </button>
         </div>
-        
+
         {error && (
           <p className="text-red-400 text-sm bg-red-950/50 inline-block px-4 py-2 rounded-lg border border-red-900/50">
             {error}
