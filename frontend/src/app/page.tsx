@@ -11,6 +11,8 @@ type Field = {
   options: string[];
   config?: string;
   required?: boolean;
+  custom_values?: string;
+  only_custom?: boolean;
 };
 
 type FormStructure = {
@@ -132,10 +134,10 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [jobId]);
 
-  const updateFieldConfig = (index: number, val: string) => {
+  const updateFieldConfig = (index: number, key: string, val: any) => {
     if (!structure) return;
     const newFields = [...structure.fields];
-    newFields[index].config = val;
+    (newFields[index] as any)[key] = val;
     setStructure({ ...structure, fields: newFields });
   };
 
@@ -144,25 +146,46 @@ export default function Home() {
     
     if (isTextLike) {
       return (
-        <select 
-          className="bg-neutral-800 border border-neutral-700 text-sm rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500 transition-colors"
-          value={field.config}
-          onChange={(e) => updateFieldConfig(idx, e.target.value)}
-        >
-          <option>Random Names</option>
-          <option>Random Emails</option>
-          <option>Random Phone</option>
-          <option>Random Ages</option>
-          <option>Random Sentences</option>
-          <option>Random Words</option>
-          <option>Random Address</option>
-          <option>Random Company</option>
-          <option>Random City</option>
-          <option>Random Country</option>
-          <option>Random Job</option>
-          <option>Random Username</option>
-          <option>Random Number</option>
-        </select>
+        <div className="flex flex-col gap-3 w-full sm:w-auto">
+          <select 
+            className="bg-neutral-800 border border-neutral-700 text-sm rounded-lg px-3 py-2 text-white outline-none focus:border-blue-500 transition-colors"
+            value={field.config}
+            onChange={(e) => updateFieldConfig(idx, 'config', e.target.value)}
+          >
+            <option>Random Names</option>
+            <option>Random Emails</option>
+            <option>Random Phone</option>
+            <option>Random Ages</option>
+            <option>Random Sentences</option>
+            <option>Random Words</option>
+            <option>Random Address</option>
+            <option>Random Company</option>
+            <option>Random City</option>
+            <option>Random Country</option>
+            <option>Random Job</option>
+            <option>Random Username</option>
+            <option>Random Number</option>
+            <option>Custom Only</option>
+          </select>
+          
+          <div className="space-y-2">
+            <textarea
+              placeholder="Custom entries (comma separated)..."
+              className="w-full sm:w-64 bg-neutral-900 border border-neutral-700 rounded-lg p-2 text-xs text-neutral-300 outline-none focus:border-blue-500 h-16 resize-none"
+              value={field.custom_values || ""}
+              onChange={(e) => updateFieldConfig(idx, 'custom_values', e.target.value)}
+            />
+            <label className="flex items-center gap-2 text-[10px] text-neutral-400 cursor-pointer">
+              <input 
+                type="checkbox" 
+                checked={field.only_custom || false}
+                onChange={(e) => updateFieldConfig(idx, 'only_custom', e.target.checked)}
+                className="rounded border-neutral-700 bg-neutral-800"
+              />
+              Only use custom entries
+            </label>
+          </div>
+        </div>
       );
     }
     

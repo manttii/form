@@ -34,38 +34,48 @@ def start_job(job_id: str, config: dict):
             fid = field['id']
             ftype = field.get('type', 'text')
             options = field.get('options', [])
-            fconfig = field.get('config', 'Random Names') # Default fallback or if provided by UI
+            fconfig = field.get('config', 'Random Names')
             
+            # Handle custom entries if provided
+            custom_vals = field.get('custom_values', '')
+            only_custom = field.get('only_custom', False)
+            if custom_vals:
+                custom_list = [v.strip() for v in custom_vals.split(',') if v.strip()]
+                if custom_list:
+                    # Decide whether to use custom data
+                    # If only_custom is true, always use it. 
+                    # If not, mix it (50/50 chance or if fconfig is 'Custom Only')
+                    if only_custom or fconfig == 'Custom Only' or random.random() > 0.5:
+                        payload[fid] = random.choice(custom_list)
+                        continue # Move to next field
+
             # Smart choice based on type
             if ftype in ['single_choice', 'dropdown', 'linear_scale'] and options:
                 payload[fid] = random.choice(options)
             elif ftype == 'multiple_choice' and options:
                 num_picks = random.randint(1, len(options))
                 picks = random.sample(options, num_picks)
-                # requests handles list values by sending multiple parameters with the same name
                 payload[fid] = picks
             elif ftype == 'date':
-                # Google Forms usually expects YYYY-MM-DD for date fields
                 payload[fid] = fake.date_between(start_date='-30y', end_date='today').strftime('%Y-%m-%d')
             elif ftype == 'time':
-                # Google Forms usually expects HH:MM
                 payload[fid] = f"{random.randint(0, 23):02d}:{random.randint(0, 59):02d}"
             elif ftype == 'paragraph':
-                payload[fid] = fake.paragraphs(nb=3)[0] # Just one long-ish paragraph
+                payload[fid] = fake.paragraphs(nb=3)[0]
             else:
                 # Text field logic
                 if fconfig == 'Random Names':
                     val = fake.name()
-                elif fconfig == 'Random Ages':
-                    val = str(random.randint(18, 65))
                 elif fconfig == 'Random Emails':
                     val = fake.email()
+                elif fconfig == 'Random Phone':
+                    val = fake.phone_number()
+                elif fconfig == 'Random Ages':
+                    val = str(random.randint(18, 65))
                 elif fconfig == 'Random Sentences':
                     val = fake.sentence()
                 elif fconfig == 'Random Words':
                     val = fake.word()
-                elif fconfig == 'Random Phone':
-                    val = fake.phone_number()
                 elif fconfig == 'Random Address':
                     val = fake.address().replace('\n', ', ')
                 elif fconfig == 'Random Company':
@@ -117,7 +127,7 @@ def start_job(job_id: str, config: dict):
             success_indicators = ["recorded", "Thank you", "thanks", "submitted", "another response", "votre réponse a été enregistrée"]
             is_success = any(ind.lower() in res.text.lower() for ind in success_indicators)
             
-            # Catch silent drops / rate limiting / validation errors
+            # Error indicators (only relevant if is_success is FALSE)
             error_indicators = [
                 "This is a required question", 
                 "must be a valid", 
@@ -131,15 +141,14 @@ def start_job(job_id: str, config: dict):
             ]
             has_errors = any(err.lower() in res.text.lower() for err in error_indicators)
 
-            # Check if we stayed on the same page (usually indicates a validation error)
-            # A success usually redirects or shows a very different small page
-            is_same_page = len(res.text) > 10000 and "formResponse" not in res.url # Crude check
+            # Check if we stayed on the same page (crude check)
+            is_same_page = len(res.text) > 10000 and "formResponse" not in res.url
 
-            if res.status_code == 200 and is_success and not has_errors:
-                jobs[job_id]["success"] += 1
-            elif res.status_code in [201, 302]:
+            # PRIORITIZE is_success. If Google says it's recorded, it is.
+            if (res.status_code == 200 and is_success) or res.status_code in [201, 302]:
                 jobs[job_id]["success"] += 1
             else:
+                # Definitely a failure or ambiguous
                 jobs[job_id]["error"] += 1
                 if len(jobs[job_id]["errors"]) < 10:
                     if has_errors:
