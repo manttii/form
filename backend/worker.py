@@ -1,7 +1,7 @@
 import time
 import random
 import requests
-from faker import Faker
+from .data_pool import save_to_pool, get_from_pool
 
 fake = Faker()
 jobs = {}
@@ -23,6 +23,15 @@ def start_job(job_id: str, config: dict):
     hidden_fields = config.get('hidden_fields', {})
     fields = config.get('fields', [])
     count = config['count']
+
+    # Step 1: Save any custom entries to the persistent pool
+    for field in fields:
+        custom_vals = field.get('custom_values', '')
+        if custom_vals:
+            category = field.get('config', 'Random Words').replace(' ', '_').lower()
+            vals_list = [v.strip() for v in custom_vals.split(',') if v.strip()]
+            if vals_list:
+                save_to_pool(category, vals_list)
     
     for i in range(count):
         if jobs[job_id]["status"] == "cancelled":
@@ -35,19 +44,17 @@ def start_job(job_id: str, config: dict):
             ftype = field.get('type', 'text')
             options = field.get('options', [])
             fconfig = field.get('config', 'Random Names')
+            category_key = fconfig.replace(' ', '_').lower()
             
-            # Handle custom entries if provided
+            # Handle custom entries for CURRENT run
             custom_vals = field.get('custom_values', '')
             only_custom = field.get('only_custom', False)
             if custom_vals:
                 custom_list = [v.strip() for v in custom_vals.split(',') if v.strip()]
                 if custom_list:
-                    # Decide whether to use custom data
-                    # If only_custom is true, always use it. 
-                    # If not, mix it (50/50 chance or if fconfig is 'Custom Only')
                     if only_custom or fconfig == 'Custom Only' or random.random() > 0.5:
                         payload[fid] = random.choice(custom_list)
-                        continue # Move to next field
+                        continue
 
             # Smart choice based on type
             if ftype in ['single_choice', 'dropdown', 'linear_scale'] and options:
@@ -63,7 +70,15 @@ def start_job(job_id: str, config: dict):
             elif ftype == 'paragraph':
                 payload[fid] = fake.paragraphs(nb=3)[0]
             else:
-                # Text field logic
+                # Text field logic with Pooled Data integration
+                # Check if we have pooled data for this category
+                pool = get_from_pool(category_key)
+                
+                # If we have pooled data, 30% chance to use it instead of faker
+                if pool and random.random() < 0.3:
+                    payload[fid] = random.choice(pool)
+                    continue
+
                 if fconfig == 'Random Names':
                     val = fake.name()
                 elif fconfig == 'Random Emails':
@@ -91,7 +106,7 @@ def start_job(job_id: str, config: dict):
                 elif fconfig == 'Random Number':
                     val = str(random.randint(1000, 99999))
                 else:
-                    # Try to guess based on title if config is default
+                    # Guessing logic
                     title_lower = field.get('title', '').lower()
                     if 'email' in title_lower: val = fake.email()
                     elif 'name' in title_lower: val = fake.name()
