@@ -31,8 +31,12 @@ export default function Home() {
   const [progress, setProgress] = useState<{status: string, progress: number, total: number, success: number, error: number, errors: string[]} | null>(null);
 
   const getApiUrl = (endpoint: string) => {
-    if (typeof window === 'undefined') return `http://localhost:8000${endpoint}`;
-    return `http://${window.location.hostname}:8000${endpoint}`;
+    // Detect if running on Vercel or production vs local development
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      return `/_/backend${endpoint}`;
+    }
+    // Local development fallback
+    return `http://localhost:8000${endpoint}`;
   };
 
   const fetchStructure = async () => {
