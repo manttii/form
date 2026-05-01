@@ -221,10 +221,71 @@ export default function Home() {
   };
 
   if (jobId && progress) {
+    return (
+      <div className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6 font-sans">
+        <div className="max-w-2xl w-full bg-neutral-900/50 backdrop-blur-xl border border-neutral-800 rounded-3xl p-8 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-neutral-800">
+            <div 
+              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500 ease-out"
+              style={{ width: `${(progress.progress / progress.total) * 100}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                {progress.status === 'running' && <Loader2 className="animate-spin text-blue-500" size={24} />}
+                {progress.status === 'completed' && <CheckCircle2 className="text-green-500" size={24} />}
+                <h2 className="text-2xl font-bold text-white capitalize">
+                  {progress.status === 'running' ? 'Running Automation' : 'Automation Completed'}
+                </h2>
+              </div>
+              <p className="text-neutral-400 font-medium">
+                Processed {progress.progress} of {progress.total} responses
+              </p>
+            </div>
+            {progress.status === 'running' && (
+              <button 
+                onClick={async () => {
+                  await fetch(`${BACKEND_URL}/cancel/${jobId}`, { method: 'POST' });
+                }}
+                className="text-xs text-red-400 hover:text-red-300 font-bold px-3 py-1 bg-red-900/20 rounded-full transition-colors"
+              >
+                Cancel Run
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="bg-neutral-800/40 border border-neutral-700/50 rounded-2xl p-6 transition-all hover:border-green-500/30">
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Successful</p>
+              <p className="text-4xl font-black text-green-500">{progress.success}</p>
+            </div>
+            <div className={`bg-neutral-800/40 border border-neutral-700/50 rounded-2xl p-6 transition-all ${progress.error > 0 ? 'border-red-500/30' : ''}`}>
+              <p className="text-xs font-bold text-neutral-500 uppercase tracking-wider mb-2">Failed</p>
+              <p className={`text-4xl font-black ${progress.error > 0 ? 'text-red-500' : 'text-neutral-700'}`}>
+                {progress.error}
+              </p>
+            </div>
+          </div>
+
+          {progress.errors && progress.errors.length > 0 && (
+            <div className="mt-6 p-4 bg-red-900/10 border border-red-900/20 rounded-xl">
+              <p className="text-xs font-bold text-red-400 mb-2 uppercase">Recent Errors</p>
+              <div className="space-y-1">
+                {progress.errors.slice(-3).map((err, i) => (
+                  <p key={i} className="text-[11px] text-red-300/80 flex items-center gap-2">
+                    <span className="w-1 h-1 bg-red-500 rounded-full" /> {err}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
           {progress.status === 'completed' && (
             <button 
               onClick={() => { setJobId(null); setProgress(null); }}
-              className="w-full py-3 bg-neutral-100 text-neutral-900 font-medium rounded-xl hover:bg-white transition-colors"
+              className="w-full mt-8 py-4 bg-neutral-100 text-neutral-900 font-bold rounded-xl hover:bg-white transition-all active:scale-95"
             >
               Start New Job
             </button>
