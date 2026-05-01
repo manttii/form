@@ -1,9 +1,8 @@
 import time
 import random
 import requests
-from .data_pool import save_to_pool, get_from_pool
-
-fake = Faker()
+from faker import Faker
+import data_pool
 jobs = {}
 
 def get_job_state(job_id: str):
@@ -31,7 +30,7 @@ def start_job(job_id: str, config: dict):
             category = field.get('config', 'Random Words').replace(' ', '_').lower()
             vals_list = [v.strip() for v in custom_vals.split(',') if v.strip()]
             if vals_list:
-                save_to_pool(category, vals_list)
+                data_pool.save_to_pool(category, vals_list)
     
     for i in range(count):
         if jobs[job_id]["status"] == "cancelled":
@@ -72,7 +71,7 @@ def start_job(job_id: str, config: dict):
             else:
                 # Text field logic with Pooled Data integration
                 # Check if we have pooled data for this category
-                pool = get_from_pool(category_key)
+                pool = data_pool.get_from_pool(category_key)
                 
                 # If we have pooled data, 30% chance to use it instead of faker
                 if pool and random.random() < 0.3:
