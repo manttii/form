@@ -76,12 +76,13 @@ def start_job(job_id: str, config: dict):
                 elif ftype == 'paragraph':
                     payload[fid] = fake.paragraphs(nb=3)[0]
                 else:
-                    # Text field logic with Pooled Data integration
+                    # Text field logic with Pooled Data priority
                     pool = data_pool.get_from_pool(category_key)
-                    if pool and random.random() < 0.3:
+                    if pool:
                         payload[fid] = random.choice(pool)
                         continue
 
+                    # Fallback to Faker if pool is empty
                     if fconfig == 'Random Names':
                         val = fake.name()
                     elif fconfig == 'Random Emails':
